@@ -1,0 +1,13 @@
+{
+  "notebook": "quantum_bloom.executed.ipynb",
+  "sha256": "e288d5294cc9b5f386b7f1302d7d024a03c6250f4516e9547985573b022addda",
+  "code_cells": 10,
+  "saved_execution_errors": [],
+  "saved_model_comparisons": [
+    {
+      "cell": 15,
+      "saved_text": "                    model  train_n  ...  prediction_seconds  total_seconds\n0   RBF SVM · 30 features      120  ...              0.0009         0.0032\n1         RBF SVM · PCA 4      120  ...              0.0005         0.0046\n2  Quantum ZZ SVM · PCA 4      120  ...              0.0003         0.3260\n\n[3 rows x 12 columns]"
+    }
+  ],
+  "limitation": "Notebook code was not executed. Saved outputs do not prove correctness or learner understanding. This is a human review record, not a credential."
+}

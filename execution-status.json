@@ -1,0 +1,10 @@
+{
+  "result": "PASS",
+  "date": "2026-11-10T22:19:28.707135+00:00",
+  "execution": "Sequential code cells in one IPython process; Agg plotting backend; no separate Jupyter kernel",
+  "source": "samples/quantum_bloom.ipynb",
+  "extensions_enabled": false,
+  "executed_code_cells": 10,
+  "limitations": "Optional extensions remain disabled. Inline figure display is not reproduced; plot files are saved by the original code.",
+  "seconds": 3.9238403300000186
+}

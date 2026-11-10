@@ -1,0 +1,10 @@
+test_bad_inputs (test_verifier.VerifierTests.test_bad_inputs) ... ok
+test_end_to_end (test_verifier.VerifierTests.test_end_to_end) ... ok
+test_escape (test_verifier.VerifierTests.test_escape) ... ok
+test_review_validation (test_verifier.VerifierTests.test_review_validation) ... ok
+test_sample_evidence (test_verifier.VerifierTests.test_sample_evidence) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.028s
+
+OK

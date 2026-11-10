@@ -1,0 +1,25 @@
+{
+  "seed": 42,
+  "test_size": 0.2,
+  "stratified": true,
+  "positive_class": "malignant",
+  "training_subset_size": 120,
+  "pca_components": 4,
+  "C": 1.0,
+  "rbf_gamma": "scale",
+  "feature_map": "standard zz_feature_map",
+  "reps": 2,
+  "entanglement": "linear",
+  "angle_range": [
+    0,
+    3.141592653589793
+  ],
+  "test_angle_clipping": true,
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.5.4",
+    "scikit-learn": "1.9.1",
+    "qiskit": "2.6.2",
+    "qiskit-machine-learning": "0.9.1"
+  }
+}
