@@ -3,7 +3,7 @@
 A small local Python prototype for inspecting a quantum-classical notebook and recording a human assessment. It uses only Python 3's standard library. No installation packages or API keys are needed. This version is a command-line application, not a hosted website.
 
 ## Start here
-Unzip the folder, open a terminal in `hybrid-skills-verifier`, and run:
+Clone or download this repository, open a terminal in the project folder (`Learn-Startup-Business-Models-for-AI`), and run:
 
 ```sh
 python verifier.py inspect samples/quantum_bloom.ipynb
