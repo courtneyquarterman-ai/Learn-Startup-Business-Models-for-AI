@@ -1,0 +1,35 @@
+Learner Explanation: Quantum BLOOM Breast Cancer Classification
+
+1. The workflow
+
+I wanted to know whether a quantum kernel could classify breast tumors as well as a standard classical model. I used the Wisconsin Diagnostic Breast Cancer dataset: 569 tumors, each with 30 measurements and a benign or malignant label.
+
+First I held back 20% of the data (114 tumors) as a test set the models never see during training. From the remaining 455, I took a stratified sample of 120 for training, meaning it keeps the same benign-to-malignant mix as the full data. I used seed 42 so anyone can get the same split.
+
+Next I prepared the data. I standardized the 30 features and used PCA to shrink them to 4 components, which keep about 81% of the variation in the data. I did this because a 4-qubit circuit can only take 4 inputs. Then I rescaled those 4 values to angles between 0 and pi so the circuit could use them. I fit all of these steps on the training data only. Fitting them on the test data would leak information and make the results look better than they really are.
+
+The quantum part is the kernel. A ZZ feature map (2 repetitions, linear entanglement) turns each tumor into a quantum state. The kernel score for two tumors is how much their states overlap, from 0 (completely different) to 1 (identical). I calculated these exactly with statevector simulation. As a check, I also ran one pair through 2,048 measurement shots: the estimate was 0.178, close to the exact 0.175. The SVM itself is still trained classically. It just uses the quantum similarity scores in place of a classical kernel.
+
+2. The classical comparison
+
+I compared three models on the same 120 training tumors and the same 114 test tumors:
+
+- RBF SVM with all 30 features: 96.5% accuracy, caught 39 of 42 malignant tumors
+- RBF SVM with the same 4 PCA inputs: 93.0% accuracy, caught 35 of 42
+- Quantum ZZ SVM with the same 4 PCA inputs: 64.0% accuracy, caught 12 of 42
+
+The first comparison shows what PCA costs. Going from 30 features to 4 dropped accuracy only a little. The second comparison is the fair head-to-head: same inputs, different kernel. The classical kernel clearly won.
+
+In this setting, the number that matters most is missed malignant tumors. The quantum model missed 30 of 42 and also flagged 11 benign tumors as malignant. Its ROC-AUC of 0.71 means it ranked tumors somewhat better than chance, but at the default decision threshold it mostly predicted benign. In this experiment, quantum did not beat classical, and I think saying so plainly is the honest result.
+
+3. Limitations
+
+- This is one small training set and one test split, so it doesn't show how these models perform in general.
+- Every model used the same untuned starting settings (C = 1). That makes the comparison fair, but it's not a contest between fully optimized models.
+- I've already seen the test scores, so if I tune the models now, I'd need fresh data or a new evaluation plan to make any honest claims.
+- Everything ran in simulation. The shot test adds sampling variation but not real hardware noise, and the timings say nothing about quantum speed on a real device.
+- One possible reason the quantum model did poorly: most similarity scores between training tumors were very low, so the kernel made almost every tumor look different from every other. Adjusting the angle scale could test this. That's a hypothesis, not a finding.
+- This is a classroom dataset, not a clinical tool.
+- My notebook shows what I ran, but it doesn't prove I understand it. That's why a reviewer should ask me follow-up questions.
+
+Note: This explanation was drafted with AI assistance and reviewed by me before submission.
