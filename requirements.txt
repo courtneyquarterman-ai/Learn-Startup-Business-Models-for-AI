@@ -1,0 +1,13 @@
+# Hybrid Skills Verifier tool (verifier.py, ai_assist.py):
+# no third-party packages. Python 3.9+ standard library only.
+# The optional AI step needs OPENAI_API_KEY or ANTHROPIC_API_KEY (see README).
+#
+# Optional: only needed to rerun the sample notebook (samples/quantum_bloom.ipynb)
+qiskit>=2,<3
+qiskit-machine-learning>=0.9,<0.10
+numpy
+pandas
+matplotlib
+scikit-learn
+ipython
+nbformat

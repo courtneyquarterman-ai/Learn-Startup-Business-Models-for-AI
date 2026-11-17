@@ -7,16 +7,16 @@ Date: [fill in]
 Consent to take notes: [fill in]
 
 ## Before the session
-Ask the learner to write their own explanation of preprocessing, the quantum kernel, the classical comparison, and limitations. Save it as explanation.txt. Run the inspection command in README.md.
+Ask the learner to write their own explanation of preprocessing, the quantum kernel, the classical comparison, and limitations. Save it as explanation.txt. Run the inspection command and the AI suggest command in README.md.
 
 ## Tasks (allow five minutes)
 1. Locate the quantum and classical comparison in the inspection output.
 2. Explain what the report proves and what still requires checking.
-3. Read the learner explanation and assign the three rubric scores.
+3. Read the learner explanation and assign the three rubric scores. Then read the AI suggestions and note whether you would change any score, and why.
 4. Make a review decision and export the report using the README command.
 5. Open the report and identify missing evidence.
 
-Record: task completion, time, prompts needed, confusion, and the participant's actual words. Ask: How useful is this report, from 1 to 5? What would you need before trusting the review?
+Record: task completion, time, prompts needed, confusion, and the participant's actual words. Ask: How useful is this report, from 1 to 5? How useful were the AI suggestions and follow-up questions, from 1 to 5? Did any AI quote or flag point you to something you missed? What would you need before trusting the review?
 
 ## Actual observations
 [Pending: record real observations; do not substitute automated tests.]

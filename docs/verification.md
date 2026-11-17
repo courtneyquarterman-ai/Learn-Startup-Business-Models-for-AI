@@ -3,7 +3,7 @@
 Executed during prototype development on November 10, 2026. This records software verification, not a participant session or a fresh quantum experiment.
 
 Command: `python -m unittest discover -s tests -v`
-Result: 5 tests passed. Full captured output: `evidence/automated-tests.txt`.
+Result: 12 tests passed (5 core, 7 AI assistant). Full captured output: `evidence/automated-tests.txt`.
 
 | Requirement ID | Acceptance criterion | Result | Evidence |
 |---|---|---|---|
@@ -13,8 +13,13 @@ Result: 5 tests passed. Full captured output: `evidence/automated-tests.txt`.
 | R4 | Export report data and escape HTML | PASS for automated assertions | `test_end_to_end` checks both files, decision, score, and matching fingerprint; `test_escape` checks escaped script text. Browser visual inspection has not been performed. |
 | R5 | Sample completes inspection and review without extra dependencies | PASS | `test_end_to_end`; direct inspection stored in `evidence/inspection.json`; implementation imports only standard-library modules |
 | R6 | Report explicitly limits interpretation | PASS | `test_sample_evidence` checks warning; report renderer includes the warning and full evidence record |
+| R7 | AI suggest returns scores, quotes, reasons, flags, questions; clear error without a key | PASS with simulated AI only | `test_end_to_end_with_simulated_openai_server` sends a real HTTP request to a local OpenAI-style test server; `test_no_key_gives_clear_error`; `test_prompt_contains_evidence_and_explanation`. Not yet run against a real AI model. |
+| R8 | Reject malformed AI output; mark quotes not in the learner text | PASS | `test_invalid_ai_scores_rejected` (score 3, non-JSON); `test_valid_suggestions_and_quote_check` |
+| R9 | Human enters scores and decision; AI and human shown side by side | PASS | `test_human_decides_and_agreement_recorded` checks `decision_made_by` and agreement count; `test_end_to_end_with_simulated_openai_server` checks the HTML section |
+| R10 | Refuse mismatched suggestions; escape AI text; show prompt option | PASS for automated assertions | `test_human_decides_and_agreement_recorded` rejects a changed explanation; `test_ai_text_is_escaped`. `--show-prompt` checked manually during development. |
 
 ## Not verified
+- AI suggestion quality with a real model. Simulated responses test the plumbing, not whether the AI's scores, flags, or questions are good. The Anthropic connection path has not been exercised against a server.
 - Full independent numerical audit or quantum hardware behavior. The sample was executed sequentially; see the rerun record below.
 - Real learner understanding, reviewer usefulness, time savings, or employer trust.
 - Browser layout and usability with an actual participant.

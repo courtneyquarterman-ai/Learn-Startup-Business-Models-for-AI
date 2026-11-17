@@ -1,3 +1,10 @@
+test_ai_text_is_escaped (test_ai_assist.AIAssistTests.test_ai_text_is_escaped) ... ok
+test_end_to_end_with_simulated_openai_server (test_ai_assist.AIAssistTests.test_end_to_end_with_simulated_openai_server) ... ok
+test_human_decides_and_agreement_recorded (test_ai_assist.AIAssistTests.test_human_decides_and_agreement_recorded) ... ok
+test_invalid_ai_scores_rejected (test_ai_assist.AIAssistTests.test_invalid_ai_scores_rejected) ... ok
+test_no_key_gives_clear_error (test_ai_assist.AIAssistTests.test_no_key_gives_clear_error) ... ok
+test_prompt_contains_evidence_and_explanation (test_ai_assist.AIAssistTests.test_prompt_contains_evidence_and_explanation) ... ok
+test_valid_suggestions_and_quote_check (test_ai_assist.AIAssistTests.test_valid_suggestions_and_quote_check) ... ok
 test_bad_inputs (test_verifier.VerifierTests.test_bad_inputs) ... ok
 test_end_to_end (test_verifier.VerifierTests.test_end_to_end) ... ok
 test_escape (test_verifier.VerifierTests.test_escape) ... ok
@@ -5,6 +12,6 @@ test_review_validation (test_verifier.VerifierTests.test_review_validation) ... 
 test_sample_evidence (test_verifier.VerifierTests.test_sample_evidence) ... ok
 
 ----------------------------------------------------------------------
-Ran 5 tests in 0.028s
+Ran 12 tests in 0.556s
 
 OK
