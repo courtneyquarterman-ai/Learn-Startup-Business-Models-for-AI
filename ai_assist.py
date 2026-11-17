@@ -2,13 +2,18 @@
 
 The AI suggests rubric scores, flags claims that may not match the saved notebook
 evidence, and drafts follow-up questions. It never makes the review decision.
-Uses only Python's standard library. Requires an API key at run time:
+Two ways to run the AI:
 
-    OPENAI_API_KEY     (optional HSV_MODEL, HSV_BASE_URL for compatible services)
-    ANTHROPIC_API_KEY  (optional HSV_MODEL)
+    Free, no key (default): an open-source model runs on your own computer or in
+    Google Colab through Hugging Face transformers. Needs `pip install transformers torch`
+    (already installed in Colab). Default model: Qwen/Qwen2.5-1.5B-Instruct (Apache 2.0).
+    Change it with HSV_MODEL.
+
+    Hosted (optional, paid): set OPENAI_API_KEY (optional HSV_BASE_URL) or ANTHROPIC_API_KEY.
 """
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 
@@ -19,18 +24,54 @@ RUBRIC = {
 }
 SCORE_MEANING = '0 = missing, 1 = partial, 2 = clear'
 AI_NOTICE = ('AI suggestions are advisory. The human reviewer chooses every score and the decision. '
-             'Quotes are checked against the learner text; numbers and reasoning still need human review.')
+             'Quotes are pulled from the learner text by the tool. AI flags are often wrong, especially '
+             'with small free models: check each one against the saved table before acting on it.')
 
-SYSTEM_PROMPT = (
+BASE_INSTRUCTIONS = (
     'You assist a human reviewer assessing a learner\'s written explanation of a hybrid '
     'quantum-classical notebook. You do not grade or certify. Base every judgment only on the '
-    'learner explanation and the saved notebook evidence provided. Quote the learner exactly. '
-    'Return JSON only, with this shape: '
-    '{"suggested_scores": {"workflow": {"score": 0|1|2, "quote": "exact learner sentence or empty", '
-    '"reason": "one sentence"}, "classical_comparison": {...}, "limitations": {...}}, '
-    '"flags": [{"claim": "learner claim", "issue": "why it may not match the evidence"}], '
-    '"follow_up_questions": ["3 to 5 questions based on this learner\'s own results"]}'
+    'learner explanation and the saved notebook evidence provided. The learner sentences are '
+    'numbered [S1], [S2], ... Return JSON only, with no other text.'
 )
+
+
+def area_prompt(key):
+    """One small task per rubric area works better with small free models."""
+    return (BASE_INSTRUCTIONS + f'\n\nYour task: score ONE rubric area, "{key}": {RUBRIC[key]} '
+            f'Scale: {SCORE_MEANING}. Read the learner sentences and decide how well THIS learner meets '
+            'this one criterion. Return: {"score": <0, 1 or 2>, "sentence": <number of the one learner '
+            'sentence that best supports your score, or 0 if none>, "reason": "<one sentence in your own words>"}')
+
+
+FLAGS_PROMPT = (
+    BASE_INSTRUCTIONS + '\n\nYour task: check only the learner sentences that contain numbers against the '
+    'saved model comparison table. List at most 3 numbers or claims that do NOT match the table. If they all '
+    'match, return an empty list. Return: {"flags": [{"claim": "<the learner claim>", "issue": "<what the '
+    'table shows instead>"}]}'
+)
+
+QUESTIONS_PROMPT = (
+    BASE_INSTRUCTIONS + '\n\nYour task: write 3 to 5 short follow-up questions a reviewer could ask this '
+    'learner, in person, to check that they understand their own results and reasoning. Return: '
+    '{"follow_up_questions": ["<question>", "<question>", "<question>"]}'
+)
+
+SYSTEM_PROMPT = '\n\n---\n\n'.join([area_prompt(k) for k in RUBRIC] + [FLAGS_PROMPT, QUESTIONS_PROMPT])
+
+
+def split_sentences(text):
+    """Split learner text into numbered sentences (bullets and lines count as sentences)."""
+    parts = []
+    for line in text.splitlines():
+        line = line.strip().lstrip('-*').strip()
+        if line:
+            pieces = [p.strip() for p in re.split(r'(?<=[.!?])\s+(?=[A-Z0-9(])', line) if p.strip()]
+            for piece in pieces:   # keep headings like "1. The workflow" together
+                if parts and re.fullmatch(r'\d+[.)]', parts[-1]):
+                    parts[-1] += ' ' + piece
+                else:
+                    parts.append(piece)
+    return parts
 
 
 def build_prompt(evidence, explanation):
@@ -41,7 +82,8 @@ def build_prompt(evidence, explanation):
             f'- Code cells: {evidence.get("code_cells")}\n'
             f'- Saved execution errors: {json.dumps(evidence.get("saved_execution_errors", []))}\n'
             f'- Saved model comparison table:\n{saved or "none found"}\n\n'
-            f'Learner explanation:\n"""\n{explanation}\n"""')
+            'Learner explanation (numbered sentences):\n'
+            + '\n'.join(f'[S{i}] {t}' for i, t in enumerate(split_sentences(explanation), 1)))
 
 
 def _post(url, headers, body, timeout=90):
@@ -57,8 +99,40 @@ def _post(url, headers, body, timeout=90):
         raise ValueError(f'Could not reach AI service: {exc.reason}') from None
 
 
+LOCAL_DEFAULT_MODEL = 'Qwen/Qwen2.5-1.5B-Instruct'
+_local_cache = {}
+
+
+def call_local_model(system, user):
+    """Run a free open-source model on this machine. No key, no account, nothing sent online
+    except the one-time model download from Hugging Face."""
+    try:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+    except ImportError:
+        raise ValueError('The free local AI needs two packages. Run: pip install transformers torch '
+                         '(already installed in Google Colab).') from None
+    name = os.environ.get('HSV_MODEL', LOCAL_DEFAULT_MODEL)
+    if name not in _local_cache:
+        tok = AutoTokenizer.from_pretrained(name)
+        dtype = torch.float16 if torch.cuda.is_available() else torch.bfloat16
+        model = AutoModelForCausalLM.from_pretrained(name, dtype=dtype)
+        model.to('cuda' if torch.cuda.is_available() else 'cpu').eval()
+        _local_cache[name] = (tok, model)
+    tok, model = _local_cache[name]
+    messages = [{'role': 'system', 'content': system}, {'role': 'user', 'content': user}]
+    inputs = tok.apply_chat_template(messages, add_generation_prompt=True, return_tensors='pt',
+                                     return_dict=True).to(model.device)
+    with torch.no_grad():
+        out = model.generate(**inputs, max_new_tokens=400, do_sample=False,
+                             pad_token_id=tok.eos_token_id)
+    text = tok.decode(out[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
+    return text, 'local (Hugging Face transformers)', name
+
+
 def call_model(system, user):
-    """Send one request to the configured AI service and return (text, provider, model)."""
+    """Send one request to the configured AI and return (text, provider, model).
+    Uses a hosted service only if its key is set; otherwise the free local model."""
     if os.environ.get('OPENAI_API_KEY'):
         model = os.environ.get('HSV_MODEL', 'gpt-4.1-mini')
         base = os.environ.get('HSV_BASE_URL', 'https://api.openai.com/v1').rstrip('/')
@@ -76,8 +150,7 @@ def call_model(system, user):
                       'messages': [{'role': 'user', 'content': user}]})
         text = ''.join(b.get('text', '') for b in data.get('content', []) if b.get('type') == 'text')
         return text, 'anthropic', model
-    raise ValueError('No AI key found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY, '
-                     'or run the review without --ai-suggestions.')
+    return call_local_model(system, user)
 
 
 def _parse_json(text):
@@ -101,15 +174,26 @@ def validate_suggestions(raw, explanation):
     if not isinstance(raw, dict) or not isinstance(raw.get('suggested_scores'), dict):
         raise ValueError('AI response is missing suggested_scores.')
     learner = _normalize(explanation)
+    sentences = split_sentences(explanation)
     scores = {}
     for key in RUBRIC:
         item = raw['suggested_scores'].get(key)
+        if isinstance(item, (int, str)) and not isinstance(item, bool):   # small models sometimes return just a score
+            item = {'score': item}
+        if isinstance(item, dict) and isinstance(item.get('score'), str) and item['score'].strip().isdigit():
+            item['score'] = int(item['score'].strip())
         if not isinstance(item, dict) or type(item.get('score')) is not int or item['score'] not in (0, 1, 2):
             raise ValueError(f'AI response has an invalid score for {key}.')
-        quote = str(item.get('quote', '')).strip()
+        number = item.get('sentence')
+        if isinstance(number, str) and number.strip().upper().lstrip('S').isdigit():
+            number = int(number.strip().upper().lstrip('S'))
+        if type(number) is int and 1 <= number <= len(sentences):
+            quote = sentences[number - 1]   # pulled from the learner text by the tool, not the AI
+        else:
+            quote = str(item.get('quote', '')).strip()
         scores[key] = {'score': item['score'], 'quote': quote,
                        'quote_found_in_explanation': bool(quote) and _normalize(quote) in learner,
-                       'reason': str(item.get('reason', '')).strip()}
+                       'reason': str(item.get('reason', '')).strip() or '(AI gave no reason)'}
     flags = [{'claim': str(f.get('claim', '')), 'issue': str(f.get('issue', ''))}
              for f in raw.get('flags', []) if isinstance(f, dict)]
     questions = [str(q).strip() for q in raw.get('follow_up_questions', []) if str(q).strip()][:5]
@@ -119,8 +203,31 @@ def validate_suggestions(raw, explanation):
 def suggest(evidence, explanation, model_call=call_model):
     if not isinstance(explanation, str) or not explanation.strip():
         raise ValueError('Explanation must be nonempty.')
-    text, provider, model = model_call(SYSTEM_PROMPT, build_prompt(evidence, explanation))
-    result = validate_suggestions(_parse_json(text), explanation)
+    user = build_prompt(evidence, explanation)
+    raw, provider, model = {'suggested_scores': {}}, None, None
+    for key in RUBRIC:
+        text, provider, model = model_call(area_prompt(key), user)
+        item = _parse_json(text)
+        if isinstance(item.get('suggested_scores'), dict):   # model answered for all areas at once
+            item = item['suggested_scores'].get(key, {})
+        elif key in item and 'score' not in item:
+            item = item[key]
+        raw['suggested_scores'][key] = item
+    notes = []
+    for field, prompt in (('flags', FLAGS_PROMPT), ('follow_up_questions', QUESTIONS_PROMPT)):
+        text, provider, model = model_call(prompt, user)
+        try:
+            value = _parse_json(text).get(field, [])
+        except ValueError:          # includes JSON errors; scores above are still usable
+            value = None
+        if not isinstance(value, list):
+            value = []
+            notes.append(f'The AI response for {field} could not be read, so none are shown.')
+        raw[field] = value
+    result = validate_suggestions(raw, explanation)
+    result['flags'] = result['flags'][:3]
+    if notes:
+        result['ai_notes'] = notes
     result.update(provider=provider, model=model, notice=AI_NOTICE,
                   notebook_sha256=evidence.get('sha256'))
     return result

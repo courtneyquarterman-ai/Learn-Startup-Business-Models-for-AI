@@ -1,6 +1,8 @@
-# Hybrid Skills Verifier tool (verifier.py, ai_assist.py):
-# no third-party packages. Python 3.9+ standard library only.
-# The optional AI step needs OPENAI_API_KEY or ANTHROPIC_API_KEY (see README).
+# Hybrid Skills Verifier core (verifier.py): Python 3.9+ standard library only.
+#
+# Free AI assistant (ai_assist.py, `suggest` command). Already installed in Google Colab.
+transformers>=4.45
+torch
 #
 # Optional: only needed to rerun the sample notebook (samples/quantum_bloom.ipynb)
 qiskit>=2,<3

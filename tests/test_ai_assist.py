@@ -46,6 +46,26 @@ class AIAssistTests(unittest.TestCase):
         self.assertEqual(result['notebook_sha256'], self.evidence['sha256'])
         self.assertIn('advisory', result['notice'])
 
+    def test_sentence_numbers_become_exact_quotes(self):
+        r = json.loads(json.dumps(GOOD))
+        r['suggested_scores']['limitations'] = {'score': 1, 'sentence': 'S3', 'reason': 'Brief.'}
+        r['suggested_scores']['workflow'] = {'score': 1, 'sentence': 99, 'reason': 'Out of range.'}
+        s = ai_assist.suggest(self.evidence, EXPLANATION, fake_call(r))['suggested_scores']
+        self.assertEqual(s['limitations']['quote'], 'Everything ran in simulation.')
+        self.assertTrue(s['limitations']['quote_found_in_explanation'])
+        self.assertFalse(s['workflow']['quote_found_in_explanation'])
+        self.assertIn('[S2] The quantum model caught 12 of 42', ai_assist.build_prompt(self.evidence, EXPLANATION))
+
+    def test_unreadable_flags_do_not_block_scores(self):
+        def call(system, user):
+            if 'follow-up questions' in system or 'saved model comparison table and' in system or 'at most 3' in system:
+                return 'broken {', 't', 'm'
+            return json.dumps({'score': '2', 'sentence': 1}), 't', 'm'
+        r = ai_assist.suggest(self.evidence, EXPLANATION, call)
+        self.assertEqual(r['suggested_scores']['workflow']['score'], 2)
+        self.assertEqual(r['flags'], [])
+        self.assertEqual(len(r['ai_notes']), 2)
+
     def test_invalid_ai_scores_rejected(self):
         bad = json.loads(json.dumps(GOOD))
         bad['suggested_scores']['workflow']['score'] = 3
@@ -54,11 +74,11 @@ class AIAssistTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ai_assist.suggest(self.evidence, EXPLANATION, lambda s, u: ('not json', 't', 'm'))
 
-    def test_no_key_gives_clear_error(self):
-        with mock.patch.dict(os.environ, {}, clear=True):
-            with self.assertRaises(ValueError) as ctx:
-                ai_assist.call_model('s', 'u')
-        self.assertIn('No AI key', str(ctx.exception))
+    def test_no_key_uses_free_local_model(self):
+        with mock.patch.dict(os.environ, {}, clear=True), \
+                mock.patch.object(ai_assist, 'call_local_model', return_value=('{}', 'local', 'm')) as local:
+            self.assertEqual(ai_assist.call_model('s', 'u')[1], 'local')
+        local.assert_called_once()
 
     def test_human_decides_and_agreement_recorded(self):
         ai = ai_assist.suggest(self.evidence, EXPLANATION, fake_call(GOOD))

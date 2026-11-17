@@ -87,11 +87,12 @@ def render_ai_section(review):
         f'<td>{e(v["reason"])}</td></tr>' for k, v in ai['suggested_scores'].items())
     flags = ''.join(f'<li>{e(f["claim"])}: {e(f["issue"])}</li>' for f in ai['flags']) or '<li>None</li>'
     qs = ''.join(f'<li>{e(q)}</li>' for q in ai['follow_up_questions']) or '<li>None</li>'
+    notes = ''.join(f'<p>{e(n)}</p>' for n in ai.get('ai_notes', []))
     return (f'<h2>AI assistant suggestions</h2><p>{e(ai["notice"])} Model: {e(ai["provider"])} / {e(ai["model"])}. '
-            f'Reviewer agreed on {cmp["agreed_count"]} of {cmp["total"]} scores.</p>'
+            f'Reviewer agreed on {cmp["agreed_count"]} of {cmp["total"]} scores.</p>{notes}'
             '<table><tr><th>Rubric area</th><th>AI</th><th>Reviewer</th><th>Agreed</th>'
             f'<th>Learner quote</th><th>AI reason</th></tr>{rows}</table>'
-            f'<h3>Possible mismatches flagged by AI</h3><ul>{flags}</ul>'
+            f'<h3>Possible mismatches flagged by AI (unverified: check each against the saved table)</h3><ul>{flags}</ul>'
             f'<h3>Suggested follow-up questions</h3><ol>{qs}</ol>')
 
 

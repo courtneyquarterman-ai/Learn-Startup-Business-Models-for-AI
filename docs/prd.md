@@ -25,8 +25,8 @@ The AI reads unstructured learner writing alongside the saved notebook evidence,
 | R4 | Export HTML and JSON containing the checks, notebook fingerprint, explanation, rubric scores, reviewer feedback, decision, and evidence limitation. Escape user text in HTML. |
 | R5 | The included sample can complete inspection and review using only Python's standard library. |
 | R6 | Every report states that notebook code was not executed and saved outputs do not prove correctness or learner understanding. |
-| R7 | The suggest command sends the learner explanation and saved evidence to a configured AI service (OpenAI-compatible or Anthropic) and returns a suggested 0-2 score, quote and reason per rubric area, flagged claims, and up to five follow-up questions. A missing key gives a readable error. |
-| R8 | Reject AI output that is not JSON or has missing or out-of-range scores. Mark any AI quote that does not appear in the learner explanation. |
+| R7 | The suggest command runs a free open-source model locally by default (no key or payment), or a hosted service if a key is set, and returns a suggested 0-2 score, quote and reason per rubric area, flagged claims, and up to five follow-up questions. Missing AI packages give a readable install message. |
+| R8 | Reject AI output that is not JSON or has missing or out-of-range scores. Number learner sentences so the AI cites a sentence; the tool pulls the quote from the learner text and marks any citation it cannot match. |
 | R9 | The reviewer always enters their own scores and decision. Reports record the decision as made by the human reviewer and show AI and reviewer scores side by side with agreement counts. |
 | R10 | Refuse AI suggestions made for a different notebook fingerprint or a different explanation. Escape all AI text in HTML. Offer --show-prompt so the reviewer can see what would be sent. |
 
@@ -35,6 +35,12 @@ Each dimension receives 0 (missing), 1 (partial), or 2 (clear): workflow explana
 
 ## Outside this version
 AI-made decisions or credentials, AI checking of code correctness, arbitrary code execution, identity checks, unseen assessment tasks, credentials, multi-user accounts, quantum hardware, and clinical use. The sample is an educational classifier experiment, not a diagnostic product.
+
+## Changes from development testing
+- First real run with the free local model (Qwen2.5-1.5B-Instruct): the model reworded the rubric instead of quoting the learner, and the quote check marked all three quotes as not found. Change: learner sentences are now numbered and the AI cites a sentence number; the tool inserts the exact sentence. See evidence/ai-suggestions-local-run.json for the rerun.
+- Second run: the small model copied a worked example from the prompt instead of judging the learner. Change: one short task per rubric area, plus separate requests for flags and questions; unreadable flags or questions are skipped with a note instead of stopping the run.
+- Third run (evidence/ai-suggestions-local-run.json, 449 seconds on 2 CPU cores): completed end to end. Scores and follow-up questions usable; chosen supporting sentences often weak; all 3 flags incorrect. Change: report labels AI flags as unverified. Planned: test a larger free model on a Colab GPU and replace AI flags with a rule-based number check.
+- Decision to use a free local model by default, so the AI step costs nothing and the explanation never leaves the reviewer's computer.
 
 ## Changes from user testing
 None yet. Complete docs/user-test.md after a real session, then update this section with the observation, requirement change, and reason.

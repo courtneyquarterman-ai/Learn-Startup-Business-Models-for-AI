@@ -2,12 +2,12 @@
 
 A small local Python prototype that helps a human reviewer assess a learner's hybrid quantum-classical notebook. It inspects the saved notebook evidence, uses an AI assistant to suggest rubric scores and follow-up questions, and records the reviewer's own scores and decision. The AI suggests; the human decides.
 
-It uses only Python 3's standard library, so nothing needs to be installed. The AI step needs an API key (see below). Everything else works without one. This version is a command-line application, not a hosted website.
+The AI is free: by default it uses an open-source model (Qwen2.5-1.5B-Instruct) that runs on your own computer or in Google Colab. No API key, account, or payment is needed. The rest of the tool uses only Python 3's standard library. This version is a command-line application, not a hosted website.
 
 ## How it works
 
 1. **Inspect** the notebook: code cells, saved errors, the saved quantum/classical comparison, and a SHA-256 fingerprint. The notebook is not executed.
-2. **AI suggest** (optional): an AI model reads the learner explanation next to the saved evidence. For each rubric area it suggests a score with an exact quote from the learner, flags claims that may not match the evidence, and drafts 3 to 5 follow-up questions. The tool checks that every quote really appears in the learner text.
+2. **AI suggest**: an AI model reads the learner explanation (split into numbered sentences) next to the saved evidence. For each rubric area it suggests a score and points to the learner sentence that supports it, flags claims that may not match the evidence, and drafts 3 to 5 follow-up questions. The tool pulls the exact sentence from the learner text itself, so quotes cannot be invented, and marks any it cannot match.
 3. **Human review**: the reviewer enters their own scores, feedback, and decision. The report shows the AI suggestion beside each human score and where they agree or differ.
 
 ## Start here
@@ -22,20 +22,21 @@ Use `python3` if that is your Python command. The output lists code cells, saved
 
 The learner's explanation is in `explanation.txt`. It covers the preprocessing, quantum kernel, classical baseline, and what the results do and do not show.
 
-## AI suggestions (optional)
+## AI suggestions (free, no key)
 
-Set one API key, then run `suggest`:
+The free AI needs two packages that Google Colab already has: `transformers` and `torch`. On your own computer, run `pip install transformers torch` once. Then:
 
 ```sh
-export OPENAI_API_KEY="your-key"        # or: export ANTHROPIC_API_KEY="your-key"
 python verifier.py suggest samples/quantum_bloom.ipynb --explanation explanation.txt --output reports/ai-suggestions.json
 ```
 
-In Colab, set the key with `import os; os.environ["OPENAI_API_KEY"] = "your-key"` (or use Colab Secrets) and add `!` before each command.
+The first run downloads the model once (about 3 GB). In Colab, choose Runtime > Change runtime type > T4 GPU (free) for a fast run. On a plain CPU it takes several minutes (about 7.5 minutes on 2 cores during development).
 
-Optional settings: `HSV_MODEL` chooses the model (defaults: `gpt-4.1-mini` for OpenAI, `claude-sonnet-4-5` for Anthropic). `HSV_BASE_URL` points to another OpenAI-compatible service. To see exactly what will be sent to the AI before sending anything, add `--show-prompt`.
+What to expect from the small free model: suggested scores and follow-up questions are usually reasonable, but the supporting sentences it picks can be poor matches and its flags are often wrong. Treat flags as prompts to check the saved table, never as findings. A real run is saved in `evidence/ai-suggestions-local-run.json` with a developer review of its quality. Add `!` before each command in Colab. To see exactly what the AI receives, add `--show-prompt`.
 
-Privacy: the `suggest` step sends the learner explanation and the saved model comparison table to the chosen AI provider. Do not use it with explanations the learner has not agreed to share. Without `suggest`, nothing leaves your computer.
+Privacy: with the free local model, the learner explanation stays on your computer or Colab session. Only the model download comes from Hugging Face.
+
+Optional settings: `HSV_MODEL` chooses a different Hugging Face model (for example `Qwen/Qwen2.5-3B-Instruct` for better quality on a GPU). If you ever want a hosted model instead, set `OPENAI_API_KEY` (optional `HSV_BASE_URL`) or `ANTHROPIC_API_KEY`; the tool then uses that service and sends the explanation and comparison table to it.
 
 ## Human review
 
@@ -55,7 +56,7 @@ Scores are ordered: workflow explanation, classical comparison, limitations. Eac
 python -m unittest discover -s tests -v
 ```
 
-The AI tests use a simulated AI service, so no key or internet is needed. See `docs/verification.md` for requirement mapping and limits. `evidence/inspection.json` is an actual inspection of the sample. Automated checks do not replace a participant session.
+The automated AI tests use a simulated AI, so no model download is needed. A real run with the free local model is recorded in `evidence/ai-suggestions-local-run.json`. See `docs/verification.md` for requirement mapping and limits. `evidence/inspection.json` is an actual inspection of the sample. Automated checks do not replace a participant session.
 
 ## Rerunning the quantum experiment
 
@@ -66,9 +67,9 @@ This prototype does not execute notebooks. To verify the experiment separately, 
 | File | Purpose |
 |---|---|
 | `verifier.py` | Inspect, suggest, and review commands; report generation |
-| `ai_assist.py` | AI prompt, AI service connection, output checks, AI vs reviewer comparison |
+| `ai_assist.py` | AI prompt, free local model and optional hosted services, output checks, AI vs reviewer comparison |
 | `explanation.txt` | Learner explanation |
-| `requirements.txt` | Dependencies (none for the tool; optional ones for the notebook rerun) |
+| `requirements.txt` | Dependencies (free AI: transformers, torch; optional notebook rerun packages) |
 | `docs/prd.md` | Product requirements |
 | `docs/plan.md` | Implementation plan |
 | `docs/verification.md` | Verification report |
@@ -79,7 +80,7 @@ This prototype does not execute notebooks. To verify the experiment separately, 
 | `evidence/` | Test output, inspection, and notebook rerun records |
 
 ## What remains before submission
-1. Run a real AI suggestion with your API key and check that the output makes sense.
+1. Run the free AI suggestion yourself in Colab and check that the output makes sense.
 2. Conduct the real session in `docs/user-test.md` and record actual observations.
 3. Update the PRD based on that feedback, implement any necessary changes, and rerun tests.
 4. Commit the changes, including the test notes. Submit the repository link.
