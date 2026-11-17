@@ -75,6 +75,7 @@ This prototype does not execute notebooks. To verify the experiment separately, 
 | `docs/verification.md` | Verification report |
 | `docs/user-test.md` | User test notes |
 | `docs/ai-use-log.md` | AI-use log |
+| `final-submission/` | Final presentation (.pptx) and final project report (.pdf) |
 | `docs/reviewer-session-guide.md` | Script for a real reviewer session |
 | `tests/` | Automated tests |
 | `evidence/` | Test output, inspection, and notebook rerun records |
